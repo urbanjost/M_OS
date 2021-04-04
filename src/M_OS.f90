@@ -718,7 +718,7 @@ type(string_t), allocatable  :: output(:)
            ! Check environment variable `OSTYPE`.
            val=lower(get_env('OSTYPE'))
            if(val.eq.'')then
-               call read_cmd('uname',output)
+               call read_cmd('uname -s',output)
                do i=1,size(output)
                   val=val//lower(output(i)%s)//' '
                enddo
@@ -1044,13 +1044,14 @@ end function which
 !()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()=
 !===================================================================================================================================
 subroutine read_cmd(cmd,output)
-character(len=*),intent(in)  :: cmd
-type(string_t), allocatable  :: output(:)
+character(len=*),intent(in)             :: cmd
+type(string_t),allocatable,intent(out)  :: output(:)
 integer                      :: ios
 integer                      :: lun
 character(len=:),allocatable :: scr
+   if(allocated(output))deallocate(output) ! bug: INTENT(OUT) should be doing this automatically, IMO
    scr=scratch()
-   call run('"'//cmd//'" > '//scr)
+   call run(cmd//' > '//scr)
    open(newunit=lun,file=scr,iostat=ios)
    output=read_lines(lun)
    close(unit=lun, status="delete",iostat=ios)
