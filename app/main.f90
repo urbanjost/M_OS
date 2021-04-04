@@ -7,18 +7,27 @@ program main
   integer :: os
   type(string_t), allocatable :: output(:)
   integer :: i
+
   debug_m_os=.true.
+
   os=get_os_type()
   write(*,gen)'get_os_type ==>',os
+
   write(*,gen)'separator ==>',separator()
+
   write(*,gen)'which uname ==>',which('uname')
   write(*,gen)'which systeminfo ==>',which('systeminfo')
-  call read_cmd('uname -a',output)
-  do i=1,size(output)
-     write(*,gen)output(i)%s
-  enddo
-  call read_cmd('systeminfo',output)
-  do i=1,size(output)
-     write(*,gen)output(i)%s
-  enddo
+
+  if(which('uname').ne.'')then
+     call read_cmd('uname -a',output)
+     do i=1,size(output)
+        write(*,gen)output(i)%s
+     enddo
+  endif
+  if(which('systeminfo').ne.'')then
+     call read_cmd('systeminfo',output)
+     do i=1,size(output)
+        write(*,gen)output(i)%s
+     enddo
+  endif
 end program main
