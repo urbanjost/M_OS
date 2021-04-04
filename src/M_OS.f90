@@ -928,7 +928,7 @@ end function read_lines
 !===================================================================================================================================
 elemental pure function lower(str,begin,end) result (string)
 
-$@(#) M_strings::lower(3f): Changes a string to lowercase over specified range
+!$@(#) M_strings::lower(3f): Changes a string to lowercase over specified range
 
 character(*), intent(in)     :: str
 character(len(str))          :: string
@@ -1050,18 +1050,92 @@ integer                      :: ios
 integer                      :: lun
 character(len=:),allocatable :: scr
    scr=scratch()
-   call run(//'"'/cmd//'" > '//scr)
+   call run('"'//cmd//'" > '//scr)
    open(newunit=lun,file=scr,iostat=ios)
    output=read_lines(lun)
    close(unit=lun, status="delete",iostat=ios)
 end subroutine read_cmd
+!===================================================================================================================================
+!()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()!
+!===================================================================================================================================
+!!$FILTER COMMENT -file random_string.3m_random.man
+!!NAME
+!!   random_string(3f) - [M_random] create random string composed of
+!!                       provided characters of specified length
+!!   (LICENSE:MIT)
+!!
+!!SYNOPSIS
+!!   function random_string(chars,length) result(out)
+!!
+!!    character(len=*),intent(in)     :: chars
+!!    integer,intent(in)              :: length
+!!    character(len=:),allocatable    :: out
+!!
+!!DESCRIPTION
+!!   Given a set of characters and a length, generate a random string of
+!!   the specified length composed of the given set of characters.
+!!
+!!OPTIONS
+!!   chars   list of characters to generate random string with
+!!   length  number of characters to place in output string
+!!
+!!RESULT
+!!   out     string of LENGTH characters randomly filled with characters
+!!           from CHARS
+!!
+!!EXAMPLE
+!!   Sample program:
+!!
+!!    program demo_random_string
+!!    use M_random, only : random_string, init_random_seed_by_dat
+!!       character(len=64) :: hexstring
+!!       ! use date and time to create a seed for calling random_seed(3f)
+!!       call init_random_seed_by_dat()
+!!       hexstring=random_string('0123456789abcdef',len(hexstring))
+!!       ! write random hexadecimal value for use
+!!       ! as something like an X11 authorization key
+!!       write(*,'(a)')hexstring
+!!    end program demo_random_string
+!!
+!!   Results
+!!
+!!    2363a3589736e23be0137ec7ebc9d74297a963f27958a176daea3dd850ed8487
+!!
+!!AUTHOR
+!!   John S. Urban
+!!
+!!LICENSE
+!!   MIT License
+!!$FILTER END
+!===================================================================================================================================
+function random_string(chars,length) result(out)
+
+!$@(#) M_random::random_string(3f): create random string composed of provided characters of specified length
+
+character(len=*),intent(in)     :: chars
+integer,intent(in)              :: length
+character(len=:),allocatable    :: out
+   real                         :: x
+   integer                      :: ilen   ! length of list of characters
+   integer                      :: which
+   integer                      :: i
+   ilen=len(chars)
+   out=''
+   if(ilen.gt.0)then
+      do i=1,length
+         call random_number(x)
+         which=nint(real(ilen-1)*x)+1
+         out=out//chars(which:which)
+      enddo
+   endif
+end function random_string
 !===================================================================================================================================
 !()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()=
 !===================================================================================================================================
 function scratch() result(filename)
 character(:), allocatable :: filename
 integer                     :: ios
-   filename='xx.scr'
+   filename=random_string('abcdefghijklmnopqrstuvwxyz_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',48)//'.scr'
 end function scratch
 !===================================================================================================================================
 !()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()!
@@ -1084,6 +1158,8 @@ end module M_OS
 !    INQUIRE returns appear to vary between compilers, and there is no guarantee the pathname may fail for other reasons like
 !    being in a read-only directory.
 !  o names like ./. and .\. often do not work on an INQUIRE as some INQUIRES return EXIST as .FALSE. if the pathname is a directory
+!  o currently the way fpm(1) is used, it is reasonable to assume a small scratch file can be made in the current directory
+!    but something more robust using $TEMPNAM, $TEMP, $TMP or something else if preferred.
 !===================================================================================================================================
 !()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()()=
 !===================================================================================================================================
