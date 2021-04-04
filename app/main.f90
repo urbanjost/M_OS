@@ -11,11 +11,11 @@ program main
   write(*,gen)'separator ==>',separator()
   write(*,gen)'which uname ==>',which('uname')
   write(*,gen)'which type ==>',which('type')
-  call read_cmd('ls',output)
+  call read_cmd('uname -a',output)
   do i=1,size(output)
      write(*,gen)output(i)%s
   enddo
-  call read_cmd('dir',output)
+  call read_cmd('systeminfo',output)
   do i=1,size(output)
      write(*,gen)output(i)%s
   enddo
