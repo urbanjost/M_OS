@@ -8,6 +8,8 @@ public :: which
 public :: read_cmd
 public :: string_t
 
+logical,public,save :: debug_m_os=.false.
+
 private :: substitute
 private :: split
 private :: lower
@@ -832,7 +834,11 @@ character(len=:),allocatable :: fname
     inquire(file='/.',exist=existing,iostat=ios,name=name)
     if(existing.and.ios.eq.0)then
         sep='/'
-        exit FOUND
+        if(debug_m_os)then
+           write(*,*)'METHOD 1:',sep
+        else
+           exit FOUND
+        endif
     endif
 
     ! check variables names common to many platforms that usually have a directory path in them
@@ -843,14 +849,22 @@ character(len=:),allocatable :: fname
     do i=1,size(envnames)
        if(index(get_env(envnames(i)),'\').ne.0)then
           sep='\'
-          exit FOUND
+          if(debug_m_os)then
+             write(*,*)'METHOD 2A:',sep
+          else
+             exit FOUND
+          endif
        elseif(index(get_env(envnames(i)),'/').ne.0)then
           sep='/'
-          exit FOUND
+          if(debug_m_os)then
+             write(*,*)'METHOD 2B:',sep
+          else
+             exit FOUND
+          endif
        endif
     enddo
 
-   !x! get argument name ARG0, although this may be just the command verb or nothing at all
+   ! get argument name ARG0, although this may be just the command verb or nothing at all
    arg0_length=0
    name=' '
    call get_command_argument(0,length=arg0_length,status=ios)
@@ -860,10 +874,18 @@ character(len=:),allocatable :: fname
 
    if(index(arg0,'\').ne.0)then
       sep='\'
-      exit FOUND
+      if(debug_m_os)then
+         write(*,*)'METHOD 3A:',sep
+      else
+         exit FOUND
+      endif
    elseif(index(arg0,'/').ne.0)then
       sep='/'
-      exit FOUND
+      if(debug_m_os)then
+         write(*,*)'METHOD 3B:',sep
+      else
+         exit FOUND
+      endif
    endif
 
    ! used to try './' and '.\' but exist test on some systems only returns true
@@ -878,10 +900,19 @@ character(len=:),allocatable :: fname
    if(ios.eq.0)then
       if(index(name,'\').ne.0)then
          sep='\'
-         exit FOUND
+         if(debug_m_os)then
+            write(*,*)'METHOD 4A:',sep
+         else
+            exit FOUND
+         endif
       elseif(index(name,'/').ne.0)then
+         write(*,*)'METHOD 4B:',sep
          sep='/'
-         exit FOUND
+         if(debug_m_os)then
+            write(*,*)'METHOD 4C:',sep
+         else
+            exit FOUND
+         endif
       endif
    endif
 
@@ -898,24 +929,42 @@ character(len=:),allocatable :: fname
     if(ios.eq.0)then
        if(existing)then
           sep='/'
-          exit FOUND
+          if(debug_m_os)then
+             write(*,*)'METHOD 5:',sep
+          else
+             exit FOUND
+          endif
        endif
     endif
 
     ! if can open file NAME but not file NAME? assume on MSWIndows as a last try
+    ! as MSWindows pathnames cannot contain that character but ULS can
     fname=scratch()
+    ! in case do not have write permission in the directory try a regular name first
     open(file=fname,newunit=lun1,iostat=ios)
     if(ios.eq.0)then
        open(file=fname//'?',newunit=lun2,iostat=ios)
        if(ios.ne.0)then
           sep='\'
+          if(debug_m_os)then
+             write(*,*)'METHOD 6:',sep
+          else
+             exit FOUND
+          endif
        endif
     endif
     close(unit=lun1,iostat=ios,status='delete')
     close(unit=lun2,iostat=ios,status='delete')
 
-    write(*,*)'<WARNING>unknown system directory path separator'
-    sep='\'
+    if(sep.eq.'')then
+       write(*,*)'<WARNING>unknown system directory path separator'
+       sep='/'
+       if(debug_m_os)then
+          write(*,*)'METHOD 7:',sep
+       else
+          exit FOUND
+       endif
+    endif
     endblock FOUND
     !*!IFORT BUG:sep_cache=sep
     isep=ichar(sep)
